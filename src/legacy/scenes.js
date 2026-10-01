@@ -66,11 +66,6 @@ export function buildHall(svg) {
   el('rect', { x: 20, y: 300, width: 170, height: 170, fill: '#170d13' }, g);
   el('rect', { x: 810, y: 300, width: 170, height: 170, fill: '#170d13' }, g);
   for (let i = 0; i < 4; i++) { el('rect', { x: 40 + i * 38, y: 330, width: 16, height: 60, fill: '#d9a86a', opacity: 0.35 }, g); el('rect', { x: 830 + i * 38, y: 330, width: 16, height: 60, fill: '#d9a86a', opacity: 0.35 }, g); }
-  // spring trees framing the hall
-  for (const [cx, cy, rr] of [[90, 280, 120], [930, 270, 130], [30, 360, 90], [985, 380, 80]]) {
-    el('circle', { cx, cy, r: rr, fill: 'rgba(240,170,190,.35)' }, g);
-    el('circle', { cx: cx + 20, cy: cy - 20, r: rr * 0.7, fill: 'rgba(255,205,220,.35)' }, g);
-  }
 }
 
 // Falling cherry petals on a 2D canvas.
