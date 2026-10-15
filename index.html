@@ -3,17 +3,199 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>경희대학교 — 문화세계의 창조</title>
-    <meta name="description" content="빛이 유리를 지나 색이 되듯, 배움이 사람을 지나 문화가 된다. 경희대학교." />
+    <title>LUMEN — 경희대학교, 문화세계의 창조</title>
+    <meta name="description" content="빛이 유리를 지나 색이 되듯, 배움이 사람을 지나 문화가 된다. 평화의전당 장미창에서 회기 캠퍼스까지, 경희대학교 인터랙티브 3D." />
     <meta name="theme-color" content="#0b0710" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="LUMEN — 경희대학교, 문화세계의 창조" />
+    <meta property="og:description" content="평화의전당 장미창의 빛, 하늘을 향해 피는 목련, 회기 캠퍼스 3D 비행. 경희대학교 인터랙티브 3D." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@800&family=Noto+Serif+KR:wght@500;700;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Noto+Serif+KR:wght@500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="loader" id="loader">
+      <div class="loader__glyph" aria-hidden="true">
+        <span class="loader__ink">慶熙</span>
+        <span class="loader__fill" id="loaderFill">慶熙</span>
+      </div>
+      <div class="loader__foot">
+        <span>KYUNG HEE UNIVERSITY</span>
+        <span id="loaderNum">0</span>
+      </div>
+      <div class="loader__bar"><span id="loaderBar"></span></div>
+    </div>
+
+    <div class="progress-line" id="progressLine"></div>
+    <header class="nav">
+      <a href="#hero" class="nav__logo" aria-label="경희대학교"><img src="/brand/khu-wordmark.svg" alt="" /></a>
+      <nav class="nav__links">
+        <a href="#motto">교시</a>
+        <a href="#palace">평화의전당</a>
+        <a href="#magnolia">목련</a>
+        <a href="#campus">캠퍼스</a>
+        <a href="#peace">세계평화의 날</a>
+        <a href="#history">연표</a>
+        <a href="#gate">입학</a>
+      </nav>
+      <a href="https://iphak.khu.ac.kr" target="_blank" rel="noopener" class="nav__cta">입학 안내 ↗</a>
+    </header>
+
+    <main>
+      <!-- 00 HERO: the rose window of 평화의전당 -->
+      <section class="scene hero" id="hero">
+        <div class="scene__sticky">
+          <canvas class="scene__canvas" id="cvNave"></canvas>
+          <div class="hero__veil"></div>
+          <div class="hero__top">
+            <span class="eyebrow">KYUNG HEE UNIVERSITY · SINCE 1949</span>
+            <span class="eyebrow">HOEGI — SEOUL</span>
+          </div>
+          <div class="hero__body">
+            <p class="hero__kicker reveal-hero">빛이 유리를 지나 색이 되듯,</p>
+            <h1 class="hero__word"><span class="split">문화세계의 창조</span></h1>
+            <p class="hero__en reveal-hero">The Creation of a Cultural World</p>
+            <div class="hero__row reveal-hero">
+              <p class="hero__desc">배움이 사람을 지나 문화가 됩니다.<br />커서를 움직여 장미창의 빛을 옮겨 보세요.</p>
+              <a href="#motto" class="pill">Scroll ↓</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 01 MOTTO: light through the motto -->
+      <section class="scene motto" id="motto">
+        <div class="scene__sticky">
+          <div class="motto__stage" id="shadowHost"></div>
+          <div class="motto__copy">
+            <span class="kicker">01 — 校是 · 교시</span>
+            <h2 class="h2">전쟁의 한가운데서 쓴<br />평화의 약속.</h2>
+            <p class="body">한국전쟁 중이던 1951년, 설립자 미원 조영식 박사는 『문화세계의 창조』를 펴냈습니다. 인간이 인간답게 사는 사회 — 그 꿈이 경희의 교시가 되었습니다.</p>
+          </div>
+          <p class="hint"><span class="hint__dot"></span><span id="mottoHint">커서가 햇빛이 되어 글자 사이로 빛이 쏟아집니다</span></p>
+        </div>
+      </section>
+
+      <!-- 02 GRAND PEACE PALACE -->
+      <section class="scene palace" id="palace">
+        <div class="scene__sticky">
+          <canvas class="scene__canvas" id="cvPalace"></canvas>
+          <div class="palace__head">
+            <span class="kicker">02 — GRAND PEACE PALACE</span>
+            <h2 class="h2">스물한 해에 걸쳐<br />지어 올린 빛의 전당.</h2>
+            <p class="body">1978년 첫 삽을 뜨고, 1999년 개교 50주년에 문을 연 평화의전당. 브뤼셀 성 미카엘·성녀 구둘라 대성당에서 영감을 받은 화강암 고딕 건축입니다.</p>
+          </div>
+          <ol class="facts" id="palaceFacts">
+            <li><b>1978</b><span>착공</span></li>
+            <li><b>1999.10.11</b><span>개교 50주년 개관</span></li>
+            <li><b>4,250</b><span>석 · 단일 공연장</span></li>
+            <li><b>Gothic</b><span>화강암 · 스테인드글라스</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 03 MAGNOLIA: the school flower blooms -->
+      <section class="scene magnolia" id="magnolia">
+        <div class="scene__sticky">
+          <div class="magnolia__stage" id="lotusHost"></div>
+          <canvas class="scene__canvas magnolia__petals" id="cvPetals"></canvas>
+          <div class="magnolia__copy">
+            <span class="kicker">03 — 木蓮 · 교화</span>
+            <h2 class="h2">하늘을 향해<br />피는 꽃.</h2>
+            <p class="body">경희의 교화는 목련입니다. 추운 겨울을 지나 가장 먼저 봄을 알리고, 옆으로 처지지 않고 하늘을 향해 피어납니다. 새 시대를 먼저 여는 사람, 경희가 바라는 사람의 모습입니다.</p>
+          </div>
+          <div class="bloom-meter"><span>BLOOM</span><i id="bloomBar"></i><b id="bloomNum">0%</b></div>
+        </div>
+      </section>
+
+      <!-- 04 CAMPUS: fly over Hoegi -->
+      <section class="scene campus" id="campus">
+        <div class="scene__sticky">
+          <canvas class="scene__canvas" id="cvCampus"></canvas>
+          <div class="tags" id="tags"></div>
+          <div class="campus__head">
+            <span class="kicker">04 — 서울캠퍼스 · 회기</span>
+            <h2 class="h2">정문에서 평화의전당까지,<br />하늘에서 걷는 캠퍼스.</h2>
+            <p class="body">실제 지도 데이터로 다시 지은 회기 캠퍼스. 스크롤하면 정문부터 한 곳씩 날아갑니다.</p>
+          </div>
+          <div class="stop" id="stop" aria-live="polite">
+            <div class="stop__top"><span class="stop__no" id="stopNo"></span><ol class="stop__dots" id="stopDots"></ol></div>
+            <span class="stop__kind" id="stopKind"></span>
+            <h3 class="stop__name" id="stopName"></h3>
+            <span class="stop__en" id="stopEn"></span>
+            <p class="stop__body" id="stopBody"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 PEACE: 1981, the International Day of Peace -->
+      <section class="scene peace" id="peace">
+        <div class="scene__sticky">
+          <div class="peace__stage" id="atlasHost"></div>
+          <div class="peace__copy">
+            <span class="kicker">05 — 1981 · INTERNATIONAL DAY OF PEACE</span>
+            <h2 class="h2">평화를<br />세계의 날로.</h2>
+            <p class="body">1981년 코스타리카 산호세의 세계대학총장회(IAUP)에서 조영식 박사가 제안한 ‘세계평화의 날’은, 그해 제36차 유엔 총회에서 만장일치로 채택되었습니다.</p>
+          </div>
+          <div class="peace__stat">
+            <div><b>1965</b><span>세계대학총장회(IAUP) 창설 주도</span></div>
+            <div><b>36th</b><span>유엔 총회 만장일치 채택</span></div>
+          </div>
+          <p class="hint hint--peace"><span class="hint__dot"></span>지구를 드래그해 돌려 보세요</p>
+        </div>
+      </section>
+
+      <!-- 06 HISTORY: a wall of carved hanja, lit year by year -->
+      <section class="scene history" id="history">
+        <div class="scene__sticky">
+          <div class="history__wall" id="wallHost"></div>
+          <div class="history__shade"></div>
+          <div class="history__copy">
+            <span class="kicker">06 — 1949 → 2026</span>
+            <h2 class="h2">돌에 새긴<br />일흔일곱 해.</h2>
+          </div>
+          <ol class="years" id="years"></ol>
+          <p class="hint hint--wall"><span class="hint__dot"></span>벽 위로 커서를 움직이면 글자에 불이 켜집니다</p>
+        </div>
+      </section>
+
+      <!-- 07 GATE: the castle gate opens on light -->
+      <section class="scene gate" id="gate">
+        <div class="scene__sticky">
+          <div class="gate__burst" id="burstHost"></div>
+          <canvas class="scene__canvas" id="cvGate"></canvas>
+          <div class="gate__top">
+            <span class="eyebrow">07 — ENTER HOEGI</span>
+            <span class="eyebrow">KYUNG HEE UNIVERSITY</span>
+          </div>
+          <ol class="gate__story" id="gateStory">
+            <li><small>1949</small>작은 초급대학에서 시작해</li>
+            <li><small>1951</small>전쟁의 한가운데서<br />평화를 꿈꾸었고,</li>
+            <li><small>1981</small>그 꿈을<br />세계의 날로 만들었습니다.</li>
+            <li><small>NOW</small>이제, 당신의 차례입니다.</li>
+          </ol>
+          <div class="gate__body">
+            <img class="gate__mark gate-extra" src="/brand/khu-wordmark.svg" alt="경희대학교" />
+            <h2 class="gate__title">당신이 만들 문화세계,<br /><em>경희에서.</em></h2>
+            <div class="gate__row gate-extra">
+              <p class="gate__ko">KYUNG HEE UNIVERSITY · SINCE 1949<br />학문과 평화. 회기에서 기다리겠습니다.</p>
+              <div class="gate__actions">
+                <a class="pill pill--crimson" href="https://iphak.khu.ac.kr" target="_blank" rel="noopener">입학 안내 ↗</a>
+                <a class="pill" href="https://www.khu.ac.kr" target="_blank" rel="noopener">경희대학교 ↗</a>
+                <a class="pill" href="#hero">처음으로 ↑</a>
+              </div>
+            </div>
+          </div>
+          <footer class="footer">
+            <span>비공식 팬메이드 홍보 페이지 · 경희대학교 서울 동대문구 경희대로 26</span>
+            <span>캠퍼스 3D: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · 지구 텍스처: NASA Blue Marble / Black Marble · 3D 효과 일부: <a href="https://www.originkit.dev" target="_blank" rel="noopener">Originkit</a></span>
+          </footer>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>
