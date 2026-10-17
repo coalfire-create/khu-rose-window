@@ -36,6 +36,7 @@
         <a href="#palace">평화의전당</a>
         <a href="#magnolia">목련</a>
         <a href="#campus">캠퍼스</a>
+        <a href="#now">경희 NOW</a>
         <a href="#peace">세계평화의 날</a>
         <a href="#history">연표</a>
         <a href="#gate">입학</a>
@@ -99,12 +100,14 @@
       <!-- 03 MAGNOLIA: the school flower blooms -->
       <section class="scene magnolia" id="magnolia">
         <div class="scene__sticky">
+          <canvas class="scene__canvas" id="cvBongwan"></canvas>
+          <div class="magnolia__veil"></div>
           <div class="magnolia__stage" id="lotusHost"></div>
           <canvas class="scene__canvas magnolia__petals" id="cvPetals"></canvas>
           <div class="magnolia__copy">
             <span class="kicker">03 — 木蓮 · 교화</span>
             <h2 class="h2">하늘을 향해<br />피는 꽃.</h2>
-            <p class="body">경희의 교화는 목련입니다. 추운 겨울을 지나 가장 먼저 봄을 알리고, 옆으로 처지지 않고 하늘을 향해 피어납니다. 새 시대를 먼저 여는 사람, 경희가 바라는 사람의 모습입니다.</p>
+            <p class="body">경희의 교화는 목련입니다. 추운 겨울을 지나 가장 먼저 봄을 알리고, 옆으로 처지지 않고 하늘을 향해 피어납니다. 봄이 오면 1956년에 지은 본관이 선 회기 캠퍼스에도 목련이 피어납니다.</p>
           </div>
           <div class="bloom-meter"><span>BLOOM</span><i id="bloomBar"></i><b id="bloomNum">0%</b></div>
         </div>
@@ -130,12 +133,31 @@
         </div>
       </section>
 
+      <!-- 05 NOW: what 경희 leads in today, projected on its halls -->
+      <section class="scene now" id="now">
+        <div class="scene__sticky">
+          <canvas class="scene__canvas" id="cvNow"></canvas>
+          <div class="now__head">
+            <span class="kicker">05 — 경희 NOW</span>
+            <h2 class="h2">지금 경희가<br />앞서가는 곳.</h2>
+            <p class="body">석조 건물이 늘어선 밤거리를 걸어 보세요. 건물마다 경희가 지금 세계와 겨루는 이야기가 비춰집니다.</p>
+          </div>
+          <div class="stop now__card" id="nowCard" aria-live="polite">
+            <div class="stop__top"><span class="stop__no" id="nowNo"></span><ol class="stop__dots" id="nowDots"></ol></div>
+            <span class="stop__kind" id="nowKind"></span>
+            <h3 class="stop__name" id="nowName"></h3>
+            <span class="stop__en" id="nowEn"></span>
+            <p class="stop__body" id="nowBody"></p>
+          </div>
+        </div>
+      </section>
+
       <!-- 05 PEACE: 1981, the International Day of Peace -->
       <section class="scene peace" id="peace">
         <div class="scene__sticky">
-          <div class="peace__stage" id="atlasHost"></div>
+          <canvas class="scene__canvas" id="cvPeace"></canvas>
           <div class="peace__copy">
-            <span class="kicker">05 — 1981 · INTERNATIONAL DAY OF PEACE</span>
+            <span class="kicker">06 — 1981 · INTERNATIONAL DAY OF PEACE</span>
             <h2 class="h2">평화를<br />세계의 날로.</h2>
             <p class="body">1981년 코스타리카 산호세의 세계대학총장회(IAUP)에서 조영식 박사가 제안한 ‘세계평화의 날’은, 그해 제36차 유엔 총회에서 만장일치로 채택되었습니다.</p>
           </div>
@@ -143,17 +165,17 @@
             <div><b>1965</b><span>세계대학총장회(IAUP) 창설 주도</span></div>
             <div><b>36th</b><span>유엔 총회 만장일치 채택</span></div>
           </div>
-          <p class="hint hint--peace"><span class="hint__dot"></span>지구를 드래그해 돌려 보세요</p>
+          <p class="hint hint--peace"><span class="hint__dot"></span>스크롤하면 비둘기들이 하늘에 平和를 그립니다</p>
         </div>
       </section>
 
-      <!-- 06 HISTORY: a wall of carved hanja, lit year by year -->
+      <!-- 07 HISTORY: a wall of carved hanja, lit year by year -->
       <section class="scene history" id="history">
         <div class="scene__sticky">
           <div class="history__wall" id="wallHost"></div>
           <div class="history__shade"></div>
           <div class="history__copy">
-            <span class="kicker">06 — 1949 → 2026</span>
+            <span class="kicker">07 — 1949 → 2026</span>
             <h2 class="h2">돌에 새긴<br />일흔일곱 해.</h2>
           </div>
           <ol class="years" id="years"></ol>
@@ -167,7 +189,7 @@
           <div class="gate__burst" id="burstHost"></div>
           <canvas class="scene__canvas" id="cvGate"></canvas>
           <div class="gate__top">
-            <span class="eyebrow">07 — ENTER HOEGI</span>
+            <span class="eyebrow">08 — ENTER HOEGI</span>
             <span class="eyebrow">KYUNG HEE UNIVERSITY</span>
           </div>
           <ol class="gate__story" id="gateStory">
@@ -190,7 +212,7 @@
           </div>
           <footer class="footer">
             <span>비공식 팬메이드 홍보 페이지 · 경희대학교 서울 동대문구 경희대로 26</span>
-            <span>캠퍼스 3D: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · 지구 텍스처: NASA Blue Marble / Black Marble · 3D 효과 일부: <a href="https://www.originkit.dev" target="_blank" rel="noopener">Originkit</a></span>
+            <span>캠퍼스 3D: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · 3D 효과 일부: <a href="https://www.originkit.dev" target="_blank" rel="noopener">Originkit</a></span>
           </footer>
         </div>
       </section>

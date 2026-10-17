@@ -246,6 +246,9 @@ button {
 .campus {
   height: 1000vh;
 }
+.now {
+  height: 900vh;
+}
 .peace {
   height: 320vh;
 }
@@ -503,8 +506,11 @@ button {
 }
 
 /* ---------- 03 magnolia ---------- */
-.magnolia .scene__sticky {
-  background: radial-gradient(90% 80% at 60% 55%, #2a1420, #0b0710 70%);
+.magnolia__veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(11, 7, 16, 0.78), rgba(11, 7, 16, 0.25) 45%, transparent 70%), linear-gradient(transparent 55%, rgba(11, 7, 16, 0.6));
+  pointer-events: none;
 }
 .magnolia__stage {
   position: absolute;
@@ -657,17 +663,20 @@ button {
 }
 
 /* ---------- 05 peace ---------- */
-.peace .scene__sticky {
-  background: radial-gradient(80% 70% at 62% 50%, #0d1530, #05060d 70%);
-}
-.peace__stage {
+.peace .scene__sticky::after,
+.now .scene__sticky::after {
+  content: '';
   position: absolute;
-  inset: 0 0 0 26%;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(100deg, rgba(7, 6, 16, 0.7), rgba(7, 6, 16, 0.2) 38%, transparent 60%);
+  pointer-events: none;
 }
-@media (max-width: 760px) {
-  .peace__stage {
-    inset: 20% 0 0 0;
-  }
+.now__head {
+  position: absolute;
+  left: var(--gutter);
+  top: 96px;
+  z-index: 3;
 }
 .peace__copy {
   position: absolute;
@@ -891,6 +900,7 @@ button {
   }
   .palace__head,
   .campus__head,
+  .now__head,
   .peace__copy,
   .history__copy,
   .motto__copy {

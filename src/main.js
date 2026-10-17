@@ -66,7 +66,9 @@ async function boot() {
     import('./scenes/petals.js'),
     import('./ok/shadow-play.js'),
     import('./ok/lantern-lotus.js'),
-    import('./ok/atlas-sash.js'),
+    import('./scenes/bongwan.js'),
+    import('./scenes/boulevard.js'),
+    import('./scenes/peace.js'),
     import('./ok/glyph-wall.js'),
     import('./ok/prism-burst.js'),
   ])
@@ -102,7 +104,7 @@ async function boot() {
   document.querySelectorAll('.split').forEach(splitChars)
   document.querySelectorAll('.scene .h2, .gate__title').forEach(splitLines)
 
-  const [{ Nave }, { Palace }, { Campus }, { Gate }, { Petals }, { mountShadowPlay }, { mountLantern }, { mountAtlasSash }, { mountGlyphWall }, { mountPrismBurst }] = await mods
+  const [{ Nave }, { Palace }, { Campus }, { Gate }, { Petals }, { mountShadowPlay }, { mountLantern }, { Bongwan }, { Boulevard }, { Peace }, { mountGlyphWall }, { mountPrismBurst }] = await mods
   setLoad(40)
   await new Promise((r) => requestAnimationFrame(r))
 
@@ -146,22 +148,16 @@ async function boot() {
     advanced: { cup: 150, tipCurl: 60, elevation: 22, absorption: 70, iridescence: 70, bloom: 120, motes: 40, breath: 2 },
   })
   const petals = new Petals(document.getElementById('cvPetals'))
+  // …in front of 본관 at spring dusk
+  const bongwan = new Bongwan(document.getElementById('cvBongwan'))
 
   const campus = new Campus(document.getElementById('cvCampus'))
   setLoad(70)
 
-  // 05 세계평화의 날: the Earth, wrapped in the school song's refrain.
-  const atlas = mountAtlasSash(document.getElementById('atlasHost'), {
-    text: '인류 위해 일하고 평화 위해 싸우세 · INTERNATIONAL DAY OF PEACE · 1981 · 문화세계의 창조 · THE CREATION OF A CULTURAL WORLD · 학문과 평화 · KYUNG HEE ·',
-    font: { fontFamily: '"Noto Serif KR", serif', fontWeight: 700, fontSize: 30, lineHeight: '1.35em', letterSpacing: '0.04em' },
-    textColor: '#E8CF8E',
-    stars: 6,
-    size: MOBILE ? 260 : 470,
-    ring: { lines: 3, radius: 118, tilt: 40, damping: 5, drift: 2 },
-    look: { clouds: 4, lights: 6, atmosphere: '#5C8DFF' },
-    sun: { source: 'cursor', angle: 150, daylight: 60 },
-    speed: 4,
-  })
+  // 05 경희 NOW: a street of halls, each lit with what 경희 leads in.
+  const boulevard = new Boulevard(document.getElementById('cvNow'))
+  // 06 세계평화의 날: doves of light write 平和 over 평화의전당.
+  const peace = new Peace(document.getElementById('cvPeace'))
 
   // 06 연표: hanja carved in stone, lit year by year.
   const wall = mountGlyphWall(document.getElementById('wallHost'), {
@@ -192,7 +188,7 @@ async function boot() {
 
   /* ---------- the chapter list ---------- */
   const $ = (id) => document.getElementById(id)
-  const scenes = ['hero', 'motto', 'palace', 'magnolia', 'campus', 'peace', 'history', 'gate'].map((id, i) => {
+  const scenes = ['hero', 'motto', 'palace', 'magnolia', 'campus', 'now', 'peace', 'history', 'gate'].map((id, i) => {
     const el = $(id)
     const sticky = el.querySelector('.scene__sticky')
     const shade = document.createElement('div')
@@ -257,6 +253,28 @@ async function boot() {
     $('stopBody').textContent = s.body
     gsap.fromTo(['#stopName', '#stopEn', '#stopBody'], { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.05, ease: 'expo.out', overwrite: true })
   }
+  // 경희 NOW card.
+  const nowCard = $('nowCard')
+  const nowDots = boulevard.stops.map(() => {
+    const li = document.createElement('li')
+    $('nowDots').appendChild(li)
+    return li
+  })
+  let nowIdx = -2
+  const showNow = (i) => {
+    if (i === nowIdx) return
+    nowIdx = i
+    nowCard.classList.toggle('is-on', i >= 0)
+    nowDots.forEach((d, k) => d.classList.toggle('is-on', k === i))
+    if (i < 0) return
+    const s = boulevard.stops[i]
+    $('nowNo').textContent = `${String(i + 1).padStart(2, '0')} / ${String(boulevard.stops.length).padStart(2, '0')}`
+    $('nowKind').textContent = s.kind
+    $('nowName').textContent = s.name
+    $('nowEn').textContent = s.en
+    $('nowBody').textContent = s.body
+    gsap.fromTo(['#nowName', '#nowEn', '#nowBody'], { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.05, ease: 'expo.out', overwrite: true })
+  }
   // Name tags over the campus.
   // (made once the campus has been built, which waits for the terrain)
   const tagsEl = $('tags')
@@ -274,6 +292,7 @@ async function boot() {
   const progressLine = $('progressLine')
   const heroBody = document.querySelector('.hero__body')
   const campusHead = document.querySelector('.campus__head')
+  const nowHead = document.querySelector('.now__head')
 
   // Everything scroll-driven, once a frame.
   let current = 0
@@ -285,7 +304,8 @@ async function boot() {
       const s = scenes[i]
       const r = s.el.getBoundingClientRect()
       s.on = r.top < viewH && r.bottom > 0
-      s.p = clamp01(-r.top / Math.max(1, r.height - viewH))
+      // progress runs out as the next chapter starts to come in over this one
+      s.p = clamp01(-r.top / Math.max(1, r.height - viewH * (i === scenes.length - 1 ? 1 : 2)))
       if (r.top <= viewH * 0.5) current = i
       if (i === 0) continue
       // The next chapter dissolves in over the last one: pinned to the
@@ -325,6 +345,7 @@ async function boot() {
     /* 03 magnolia: open with scroll, petals fall once it has bloomed */
     const bloom = ease(range(S.magnolia.p, 0.05, 0.75))
     lotus.props.open = bloom
+    bongwan.progress = S.magnolia.p
     petals.amount = range(S.magnolia.p, 0.55, 0.85)
     petals.active = S.magnolia.on
     $('bloomBar').style.setProperty('--k', bloom)
@@ -340,9 +361,13 @@ async function boot() {
       campus.placeLabels(tagEls, viewW, viewH)
     } else showStop(-1)
 
-    /* 05 peace: the Earth turns with scroll, comes closer */
-    atlas.props.spin = S.peace.p * Math.PI * 1.4
-    atlas.props.scale = 0.85 + ease(range(S.peace.p, 0, 0.6)) * 0.3
+    /* 05 경희 NOW */
+    boulevard.progress = S.now.p
+    nowHead.style.opacity = (1 - range(S.now.p, 0.03, 0.07)).toFixed(3)
+    showNow(S.now.on ? boulevard.stopIndex() : -1)
+
+    /* 06 peace: the flock rises and writes the word */
+    peace.progress = S.peace.p
 
     /* 06 history: the wall lights up year by year */
     const hp = range(S.history.p, 0.08, 0.92)
@@ -374,7 +399,10 @@ async function boot() {
   const views = [
     [S.hero, nave],
     [S.palace, palace],
+    [S.magnolia, bongwan],
     [S.campus, campus],
+    [S.now, boulevard],
+    [S.peace, peace],
     [S.gate, gate],
   ]
   gsap.ticker.add(() => {
@@ -387,7 +415,7 @@ async function boot() {
   })
 
   /* ---------- warm up, then lift the curtain ---------- */
-  for (const v of [nave, palace, campus, gate]) {
+  for (const v of [nave, palace, bongwan, campus, boulevard, peace, gate]) {
     try {
       v.render(1 / 60)
     } catch (e) {
@@ -416,7 +444,7 @@ async function boot() {
       .from('.nav, .hero .eyebrow, .reveal-hero', { y: 20, opacity: 0, stagger: 0.08, duration: 1, ease: 'power3.out' }, '-=1.2'),
   )
   lenis.start()
-  if (import.meta.env.DEV) Object.assign(window, { __nave: nave, __palace: palace, __campus: campus, __gate: gate, __lenis: lenis })
+  if (import.meta.env.DEV) Object.assign(window, { __nave: nave, __palace: palace, __campus: campus, __gate: gate, __now: boulevard, __peace: peace, __lenis: lenis })
 }
 
 boot()

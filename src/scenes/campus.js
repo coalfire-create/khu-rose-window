@@ -6,6 +6,8 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import DATA from '../data/campus.json'
 import { pixelRatio, tier, MOBILE } from '../device.js'
+import { bongwanModel } from './bongwan.js'
+import { palaceModel } from './palace.js'
 
 // A flight over the real Hoegi campus at blue hour, built only from free open
 // data: OpenStreetMap footprints, paths and green areas (© OSM contributors)
@@ -49,7 +51,7 @@ export class Campus {
     this.scene = new THREE.Scene()
     this.scene.fog = new THREE.FogExp2('#18213f', 0.0011)
     this.camera = new THREE.PerspectiveCamera(45, 1, 1, 6000)
-    this.u = { uTime: { value: 0 }, uFocus: { value: -1 }, uFocusK: { value: 0 } }
+    this.u = { uTime: { value: 0 }, uFocus: { value: -1 }, uFocusK: { value: 0 }, uGlow: { value: 1.3 } }
 
     const composer = (this.composer = new EffectComposer(r))
     composer.addPass(new RenderPass(this.scene, this.camera))
@@ -194,11 +196,40 @@ export class Campus {
     const terrain = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ map: mapTex, emissiveMap: glowTex, emissive: '#ffffff', emissiveIntensity: 0.9, roughness: 0.95 }))
     scene.add(terrain)
 
-    /* --- buildings: extruded footprints on the hillside, windows lit --- */
+    /* --- buildings: footprints raised as granite halls on the hillside --- */
+    // 본관 and 평화의전당 are the real models; every other hall is its
+    // footprint with a plinth, pilasters, string courses, tall windows (lit or
+    // dark glass) and a cornice; the town around is plainer and cooler.
     const stopOf = Object.fromEntries(STOPS.filter((s) => s.hall).map((s, i) => [s.hall, STOPS.indexOf(s)]))
     const geos = []
     this.halls = []
-    let palaceB = null
+    const MODELS = { 본관: null, 평화의전당: null }
+    const withInfo = (geo, info, top) => {
+      const g2 = geo.index ? geo.toNonIndexed() : geo
+      const n = g2.attributes.position.count
+      const a = new Float32Array(n * 4)
+      const t = new Float32Array(n)
+      for (let i = 0; i < n; i++) (a.set(info, i * 4), (t[i] = top))
+      g2.setAttribute('aInfo', new THREE.BufferAttribute(a, 4))
+      g2.setAttribute('aTop', new THREE.BufferAttribute(t, 1))
+      for (const key of Object.keys(g2.attributes)) if (!['position', 'normal', 'uv', 'aInfo', 'aTop'].includes(key)) g2.deleteAttribute(key)
+      if (!g2.attributes.uv) g2.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * 2), 2))
+      geos.push(g2)
+    }
+    const prism = (pts, y0, h, grow = 0) => {
+      const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length
+      const cz = pts.reduce((a, p) => a + p[1], 0) / pts.length
+      const shape = new THREE.Shape(
+        pts.map(([x, z]) => {
+          const d = Math.hypot(x - cx, z - cz) || 1
+          return new THREE.Vector2(x + ((x - cx) / d) * grow, -(z + ((z - cz) / d) * grow))
+        }),
+      )
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false })
+      geo.rotateX(-Math.PI / 2)
+      geo.translate(0, y0, 0)
+      return geo
+    }
     DATA.buildings.forEach((b, idx) => {
       let base = Infinity
       let top = -Infinity
@@ -207,108 +238,123 @@ export class Campus {
         base = Math.min(base, h)
         top = Math.max(top, h)
       }
-      const shape = new THREE.Shape(b.p.map(([x, z]) => new THREE.Vector2(x, -z)))
-      const height = b.h + (top - base)
-      const geo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false })
-      geo.rotateX(-Math.PI / 2)
-      geo.translate(0, base - 0.5, 0)
-      const n = geo.attributes.position.count
-      const info = new Float32Array(n * 4)
+      const cxz = b.p.reduce((a, [x, z]) => [a[0] + x / b.p.length, a[1] + z / b.p.length], [0, 0])
       const stop = b.n in stopOf ? stopOf[b.n] : -1
-      for (let i = 0; i < n; i++) info.set([b.c, hash(idx + 1), base, stop], i * 4)
-      geo.setAttribute('aInfo', new THREE.BufferAttribute(info, 4))
-      geos.push(geo)
-      if (b.n) {
-        const cxz = b.p.reduce((a, [x, z]) => [a[0] + x / b.p.length, a[1] + z / b.p.length], [0, 0])
-        this.halls.push({ name: b.n, anchor: new THREE.Vector3(cxz[0], base + height + 6, cxz[1]), stop })
+      if (b.n in MODELS) {
+        MODELS[b.n] = { b, base: this.ground(cxz[0], cxz[1]), cxz }
+        return
       }
-      if (b.n === '평화의전당') palaceB = { b, base, height }
-    })
-    // 평화의전당: twin towers at its south corners, pinnacles, a glowing rose.
-    if (palaceB) {
-      const { b, base } = palaceB
-      const xs = b.p.map((p) => p[0])
-      const zs = b.p.map((p) => p[1])
-      const x0 = Math.min(...xs), x1 = Math.max(...xs), zf = Math.max(...zs)
-      const tw = 15
-      const add = (geo) => {
-        const n = geo.attributes.position.count
-        const info = new Float32Array(n * 4)
-        for (let i = 0; i < n; i++) info.set([1, 0.37, base, STOPS.findIndex((s) => s.key === 'palace')], i * 4)
-        geo.setAttribute('aInfo', new THREE.BufferAttribute(info, 4))
-        const g2 = geo.index ? geo.toNonIndexed() : geo
-        geos.push(g2)
+      // campus halls a storey taller than OSM's guess when it has none
+      const height = b.h + (top - base) + (b.c ? 2 : 0)
+      const y0 = base - 0.5
+      withInfo(prism(b.p, y0, height), [b.c, hash(idx + 1), base, stop], y0 + height)
+      if (b.c) {
+        // plinth and cornice, a little proud of the walls
+        withInfo(prism(b.p, y0, 1.8, 0.35), [2, 0, base, stop], y0 + 1.8)
+        withInfo(prism(b.p, y0 + height - 0.2, 1.1, 0.7), [2, 0, base, stop], y0 + height + 0.9)
+        withInfo(prism(b.p, y0 + height + 0.9, 0.9, 0.2), [2, 0, base, stop], y0 + height + 1.8)
       }
-      for (const tx of [x0 + 12 + tw / 2, x1 - 12 - tw / 2]) {
-        const t = new THREE.BoxGeometry(tw, 50, tw)
-        t.translate(tx, base + 25, zf - tw / 2 - 1)
-        add(t)
-        for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-          const c = new THREE.ConeGeometry(1.4, 7, 4)
-          c.rotateY(Math.PI / 4)
-          c.translate(tx + (dx * tw) / 2.2, base + 53.5, zf - tw / 2 - 1 + (dz * tw) / 2.2)
-          add(c)
-        }
-      }
-      const gable = new THREE.ConeGeometry(14, 14, 4)
-      gable.rotateY(Math.PI / 4)
-      gable.scale(1, 1, 0.3)
-      gable.translate((x0 + x1) / 2, base + 36, zf - 4)
-      add(gable)
-      // the rose, lit
-      const rose = new THREE.Mesh(new THREE.CircleGeometry(4.2, 32), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffb36b').multiplyScalar(2.4) }))
-      rose.position.set((x0 + x1) / 2, base + 27, zf + 0.4)
-      scene.add(rose)
-      this.palacePos = new THREE.Vector3((x0 + x1) / 2, base + 26, zf)
-    }
-    const flat = geos.map((g2) => {
-      const out = g2.index ? g2.toNonIndexed() : g2
-      for (const key of Object.keys(out.attributes)) if (!['position', 'normal', 'uv', 'aInfo'].includes(key)) out.deleteAttribute(key)
-      if (!out.attributes.uv) out.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(out.attributes.position.count * 2), 2))
-      return out
+      if (b.n) this.halls.push({ name: b.n, anchor: new THREE.Vector3(cxz[0], y0 + height + 7, cxz[1]), stop })
     })
     const bmat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.85 })
     const U = this.u
     bmat.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, U)
       sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute vec4 aInfo;\nvarying vec4 vInfo;\nvarying vec3 vWP;\nvarying vec3 vWN;')
-        .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvInfo = aInfo;\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvWN = normalize(mat3(modelMatrix) * objectNormal);')
+        .replace('#include <common>', '#include <common>\nattribute vec4 aInfo;\nattribute float aTop;\nvarying vec4 vInfo;\nvarying float vTop;\nvarying vec3 vWP;\nvarying vec3 vWN;')
+        .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvInfo = aInfo;\nvTop = aTop;\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvWN = normalize(mat3(modelMatrix) * objectNormal);')
       sh.fragmentShader = sh.fragmentShader
         .replace(
           '#include <common>',
           `#include <common>
-           varying vec4 vInfo; varying vec3 vWP; varying vec3 vWN;
+           varying vec4 vInfo; varying float vTop; varying vec3 vWP; varying vec3 vWN;
            uniform float uTime; uniform float uFocus; uniform float uFocusK;
-           float hh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }`,
+           float hh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+           // x: in a window, y: lit, z: on a pilaster/course, w: wall
+           vec4 facade(){
+             if (abs(vWN.y) > 0.5 || vInfo.x > 1.5) return vec4(0.0);
+             bool campus = vInfo.x > 0.5;
+             float bay = campus ? 4.2 : 3.6;
+             vec2 t = normalize(vec2(-vWN.z, vWN.x));
+             float s = dot(vWP.xz, t) / bay;
+             float fl = (vWP.y - vInfo.z - 1.8) / 3.8;
+             vec2 cell = vec2(floor(s), floor(fl));
+             vec2 f = vec2(fract(s), fract(fl));
+             float inside = step(0.0, fl) * step(vWP.y, vTop - 1.6);
+             float win = campus
+               ? step(0.31, f.x) * step(f.x, 0.69) * step(0.16, f.y) * step(f.y, 0.86)
+               : step(0.22, f.x) * step(f.x, 0.78) * step(0.3, f.y) * step(f.y, 0.8);
+             win *= inside;
+             float on = step(hh(cell + vInfo.y * 91.0), campus ? 0.46 : 0.26);
+             float trim = campus ? max(step(f.x, 0.07) + step(0.93, f.x), step(f.y, 0.06)) * inside : 0.0;
+             return vec4(win, on, min(trim, 1.0), 1.0);
+           }`,
         )
         .replace(
           '#include <color_fragment>',
           `#include <color_fragment>
-           // campus halls in pale granite, the city around in cooler concrete
-           diffuseColor.rgb *= mix(vec3(0.42, 0.45, 0.55), vec3(0.86, 0.82, 0.76), vInfo.x);
-           if (vWN.y > 0.5) diffuseColor.rgb *= 0.55;`,
+           vec4 fc = facade();
+           vec3 wall = vInfo.x > 1.5 ? vec3(0.93, 0.9, 0.85) : vInfo.x > 0.5 ? vec3(0.82, 0.78, 0.72) : vec3(0.34, 0.36, 0.43);
+           if (vWN.y > 0.5) wall = vInfo.x > 0.5 ? vec3(0.3, 0.3, 0.33) : vec3(0.2, 0.21, 0.25);
+           diffuseColor.rgb *= wall * (1.0 + 0.12 * fc.z);
+           // dark glass where the windows are unlit
+           diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.04, 0.05, 0.08), fc.x * (1.0 - fc.y));`,
         )
         .replace(
           '#include <emissivemap_fragment>',
           `#include <emissivemap_fragment>
-           if (abs(vWN.y) < 0.5) {
-             vec2 t = normalize(vec2(-vWN.z, vWN.x));
-             float s = dot(vWP.xz, t);
-             float fl = (vWP.y - vInfo.z) / 3.7;
-             vec2 cell = vec2(floor(s / 3.3), floor(fl));
-             vec2 f = vec2(fract(s / 3.3), fract(fl));
-             float win = step(0.22, f.x) * step(f.x, 0.78) * step(0.3, f.y) * step(f.y, 0.82) * step(1.0, fl);
-             float on = step(hh(cell + vInfo.y * 91.0), mix(0.32, 0.62, vInfo.x));
-             vec3 warm = mix(vec3(1.0, 0.72, 0.42), vec3(0.85, 0.9, 1.0), step(0.8, hh(cell * 1.7 + 3.0)));
+           {
+             vec4 fc2 = facade();
+             vec2 t = normalize(vec2(-vWN.z, vWN.x) + 1e-5);
+             vec2 cell = vec2(floor(dot(vWP.xz, t) / 4.0), floor((vWP.y - vInfo.z) / 3.8));
+             vec3 warm = mix(vec3(1.0, 0.74, 0.44), vec3(0.88, 0.92, 1.0), step(0.82, hh(cell * 1.7 + 3.0)));
              float focus = step(abs(vInfo.w - uFocus), 0.1) * uFocusK;
-             totalEmissiveRadiance += warm * win * on * (0.75 + 0.5 * focus);
-             // the hall on screen glows gold along its walls
-             totalEmissiveRadiance += vec3(1.0, 0.72, 0.38) * focus * 0.05;
+             totalEmissiveRadiance += warm * fc2.x * fc2.y * (vInfo.x > 0.5 ? 0.85 : 0.6) * (1.0 + 0.4 * focus);
+             // the hall on screen: a warm floodlight wash from below
+             float wash = focus * smoothstep(vTop, vInfo.z, vWP.y) * step(abs(vWN.y), 0.5);
+             totalEmissiveRadiance += vec3(0.55, 0.38, 0.2) * wash * 0.22;
            }`,
         )
     }
-    scene.add(new THREE.Mesh(mergeGeometries(flat, false), bmat))
+    scene.add(new THREE.Mesh(mergeGeometries(geos, false), bmat))
+    // the two real halls, set on their footprints
+    this.u.uGlow = this.u.uGlow || { value: 1.2 }
+    if (MODELS['본관']) {
+      const { base, cxz } = MODELS['본관']
+      const hall = bongwanModel({ lit: 0.5 })
+      const [fx, fz] = L.fountain
+      hall.rotation.y = Math.atan2(fx - cxz[0], fz - cxz[1])
+      hall.scale.setScalar(0.9)
+      hall.position.set(cxz[0], base + 1.5, cxz[1])
+      scene.add(hall)
+      // floodlit from the fountain court
+      const front = new THREE.Vector3(Math.sin(hall.rotation.y), 0, Math.cos(hall.rotation.y))
+      for (const side of [-1, 1]) {
+        const sp = new THREE.SpotLight('#ffe2bf', 7000, 240, 0.45, 0.75, 2)
+        const right = new THREE.Vector3(front.z, 0, -front.x).multiplyScalar(side * 30)
+        sp.position.set(cxz[0] + front.x * 55 + right.x, base + 2, cxz[1] + front.z * 55 + right.z)
+        sp.target.position.set(cxz[0] + right.x * 0.6, base + 14, cxz[1] + right.z * 0.6)
+        scene.add(sp, sp.target)
+      }
+      this.halls.push({ name: '본관', anchor: new THREE.Vector3(cxz[0], base + 32, cxz[1]), stop: stopOf['본관'] })
+    }
+    if (MODELS['평화의전당']) {
+      const { base, cxz } = MODELS['평화의전당']
+      const pal = palaceModel(this.u, { stair: false })
+      pal.rotation.y = 0.14
+      pal.scale.setScalar(1.25)
+      pal.position.set(cxz[0], base, cxz[1] + 8)
+      scene.add(pal)
+      for (const dx of [-30, 30]) {
+        const sp = new THREE.SpotLight('#ffe2bf', 22000, 300, 0.5, 0.75, 2)
+        sp.position.set(cxz[0] + dx, base, cxz[1] + 110)
+        sp.target.position.set(cxz[0] + dx * 0.4, base + 35, cxz[1] + 8)
+        scene.add(sp, sp.target)
+      }
+      pal.updateMatrixWorld(true)
+      this.palacePos = pal.userData.rose.clone().applyMatrix4(pal.matrixWorld)
+      this.halls.push({ name: '평화의전당', anchor: this.palacePos.clone().add(new THREE.Vector3(0, 40, 0)), stop: stopOf['평화의전당'] })
+    }
 
     /* --- trees: dark woods on the hill, magnolias along the walks --- */
     const rnd = ((s) => () => ((s = (s * 16807) % 2147483647) / 2147483647))(11)
@@ -464,10 +510,10 @@ export class Campus {
     for (const s of STOPS) {
       const [x, z] = s.key === 'palace' && this.palacePos ? [this.palacePos.x, this.palacePos.z] : L[s.key]
       const gy = this.ground(x, z)
-      s.target = new THREE.Vector3(x, gy + (s.key === 'palace' ? 24 : s.key === 'gate' || s.key === 'motto' ? 6 : 10), z)
+      s.target = s.key === 'palace' && this.palacePos ? this.palacePos.clone().add(new THREE.Vector3(0, -6, 0)) : new THREE.Vector3(x, gy + (s.key === 'gate' || s.key === 'motto' ? 6 : 10), z)
     }
     this.labels = [
-      ...STOPS.map((s, i) => ({ name: s.name, anchor: s.target.clone().add(new THREE.Vector3(0, s.key === 'palace' ? 36 : 14, 0)), stop: true, i })),
+      ...STOPS.map((s, i) => ({ name: s.name, anchor: s.target.clone().add(new THREE.Vector3(0, s.key === 'palace' ? 44 : s.key === 'main' ? 24 : 14, 0)), stop: true, i })),
       ...this.halls.filter((h) => h.stop < 0 && !/^\d|동$/.test(h.name)).map((h) => ({ name: h.name, anchor: h.anchor, stop: false })),
     ]
     this.labels.forEach((l) => (l.alpha = 0))
