@@ -2,6 +2,7 @@ import './style.css'
 import gsap from 'gsap'
 import Lenis from 'lenis'
 import { MOBILE } from './device.js'
+import { ART } from './illust.js'
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
 const ease = (t) => t * t * (3 - 2 * t)
@@ -261,10 +262,32 @@ async function boot() {
     return li
   })
   let nowIdx = -2
+  const nowArt = $('nowArt')
+  const nowVeil = $('nowVeil')
+  // each stop's drawing traces itself in gold, then its words fade in
+  const drawArt = (key) => {
+    nowArt.innerHTML = ART[key] || ''
+    const strokes = [...nowArt.querySelectorAll('.d')]
+    strokes.forEach((el) => {
+      const len = el.getTotalLength ? el.getTotalLength() : 400
+      el.style.strokeDasharray = `${len} ${len}`
+      el.style.strokeDashoffset = len
+      el.style.fillOpacity = 0
+    })
+    gsap.to(strokes, { strokeDashoffset: 0, duration: 1.5, ease: 'power2.inOut', stagger: { amount: 1.4 } })
+    gsap.to(strokes, { fillOpacity: 1, duration: 0.8, delay: 1.2, stagger: { amount: 0.8 } })
+    gsap.fromTo(nowArt.querySelectorAll('.f'), { opacity: 0 }, { opacity: (k, el) => +(el.getAttribute('opacity') || 1), duration: 0.8, delay: 1.4, stagger: 0.03 })
+  }
   const showNow = (i) => {
     if (i === nowIdx) return
     nowIdx = i
     nowCard.classList.toggle('is-on', i >= 0)
+    nowVeil.classList.toggle('is-on', i >= 0)
+    if (i < 0) gsap.to(nowArt, { opacity: 0, duration: 0.4 })
+    else {
+      gsap.set(nowArt, { opacity: 1 })
+      drawArt(boulevard.stops[i].key)
+    }
     nowDots.forEach((d, k) => d.classList.toggle('is-on', k === i))
     if (i < 0) return
     const s = boulevard.stops[i]
@@ -291,6 +314,11 @@ async function boot() {
   const navLinks = [...document.querySelectorAll('.nav__links a')]
   const progressLine = $('progressLine')
   const heroBody = document.querySelector('.hero__body')
+  const warEl = $('war')
+  const warShots = [...warEl.querySelectorAll('.war__shot')]
+  const warTitle = $('warTitle')
+  const warTurn = $('warTurn')
+  const mottoDawn = $('mottoDawn')
   const campusHead = document.querySelector('.campus__head')
   const nowHead = document.querySelector('.now__head')
 
@@ -324,7 +352,8 @@ async function boot() {
       }
       if (!MOBILE) s.sticky.style.filter = mid ? `blur(${((1 - e) * 6).toFixed(2)}px)` : ''
       prev.shade.style.opacity = mid ? (ease(k) * 0.55).toFixed(3) : '0'
-      reveal(s, k > 0.6 && s.p < 0.995)
+      // (the motto's own words wait until the war has given way to light)
+      reveal(s, s.id === 'motto' ? s.p > 0.6 && s.p < 0.995 : k > 0.6 && s.p < 0.995)
     }
     scenes.forEach((s, i) => s.sticky.style.transform !== tf[i] && (s.sticky.style.transform = tf[i]))
 
@@ -334,8 +363,26 @@ async function boot() {
     heroBody.style.opacity = (1 - range(h.p, 0.05, 0.4)).toFixed(3)
     heroBody.style.transform = `translateY(${(-range(h.p, 0, 0.5) * 8).toFixed(2)}vh)`
 
-    /* 01 motto */
-    shadow.props.power = S.motto.on ? 1 : 0
+    /* 01 motto: the war in photographs, then the light breaks through */
+    {
+      const mp = S.motto.p
+      const shots = warShots
+      const n = shots.length
+      shots.forEach((f, k) => {
+        const a = 0.1 + (k / n) * 0.42
+        const b = a + 0.42 / n
+        const vis = clamp01(Math.min((mp - a + 0.04) / 0.04, (b + 0.04 - mp) / 0.04))
+        f.style.opacity = vis.toFixed(3)
+        const t = range(mp, a - 0.04, b + 0.04)
+        f.style.transform = `scale(${(1.14 - t * 0.12).toFixed(4)}) translate(${((k % 2 ? -1 : 1) * (t - 0.5) * 2).toFixed(2)}%, ${((t - 0.5) * -1.5).toFixed(2)}%)`
+      })
+      warTitle.style.opacity = (1 - range(mp, 0.07, 0.11)).toFixed(3)
+      warTurn.style.opacity = (range(mp, 0.5, 0.54) * (1 - range(mp, 0.6, 0.64))).toFixed(3)
+      warEl.style.opacity = (1 - range(mp, 0.6, 0.68)).toFixed(3)
+      warEl.style.visibility = mp > 0.69 ? 'hidden' : ''
+      mottoDawn.style.opacity = (Math.sin(Math.PI * range(mp, 0.56, 0.76)) * 0.95).toFixed(3)
+      shadow.props.power = S.motto.on && mp > 0.6 ? 1 : 0
+    }
 
     /* 02 palace */
     palace.progress = S.palace.p

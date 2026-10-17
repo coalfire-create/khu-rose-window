@@ -8,6 +8,7 @@ import DATA from '../data/campus.json'
 import { pixelRatio, tier, MOBILE } from '../device.js'
 import { bongwanModel } from './bongwan.js'
 import { palaceModel } from './palace.js'
+import { hallKit, styleFor, footprintBox } from './halls.js'
 
 // A flight over the real Hoegi campus at blue hour, built only from free open
 // data: OpenStreetMap footprints, paths and green areas (© OSM contributors)
@@ -204,6 +205,8 @@ export class Campus {
     const geos = []
     this.halls = []
     const MODELS = { 본관: null, 평화의전당: null }
+    const kit = hallKit()
+    const CORE = [-20, -120] // the halls face the heart of the campus
     const withInfo = (geo, info, top) => {
       const g2 = geo.index ? geo.toNonIndexed() : geo
       const n = g2.attributes.position.count
@@ -247,6 +250,23 @@ export class Campus {
       // campus halls a storey taller than OSM's guess when it has none
       const height = b.h + (top - base) + (b.c ? 2 : 0)
       const y0 = base - 0.5
+      // a campus hall that is roughly a box is built in detail, in its style
+      if (b.c) {
+        const st = styleFor(b.n) || ['granite']
+        const fb = footprintBox(b.p)
+        if (fb.fill > 0.66 && fb.w > 8 && fb.d > 6) {
+          const c = Math.cos(fb.a)
+          const sn = Math.sin(fb.a)
+          let xa = new THREE.Vector3(c, 0, sn)
+          let za = new THREE.Vector3(-sn, 0, c)
+          if (za.x * (CORE[0] - fb.cx) + za.z * (CORE[1] - fb.cz) < 0) ((xa = xa.negate()), (za = za.negate()))
+          const m = new THREE.Matrix4().makeBasis(xa, new THREE.Vector3(0, 1, 0), za).setPosition(fb.cx, y0, fb.cz)
+          const hh = Math.max(st[0] === 'library' ? 20 : 13, height)
+          kit.hall(st[0], fb.w * 0.97, fb.d * 0.97, hh, m, hash(idx + 7), st[1])
+          if (b.n) this.halls.push({ name: b.n, anchor: new THREE.Vector3(fb.cx, y0 + hh + (st[0] === 'library' ? 16 : 8), fb.cz), stop })
+          return
+        }
+      }
       withInfo(prism(b.p, y0, height), [b.c, hash(idx + 1), base, stop], y0 + height)
       if (b.c) {
         // plinth and cornice, a little proud of the walls
@@ -317,6 +337,7 @@ export class Campus {
         )
     }
     scene.add(new THREE.Mesh(mergeGeometries(geos, false), bmat))
+    scene.add(kit.meshes({ night: 1 }))
     // the two real halls, set on their footprints
     this.u.uGlow = this.u.uGlow || { value: 1.2 }
     if (MODELS['본관']) {

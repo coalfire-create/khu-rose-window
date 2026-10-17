@@ -46,6 +46,7 @@ function ashlar() {
 // A lit stone material; `scale` is blocks per metre / 8 rows.
 export function stoneMaterial(color = '#d9d4cc', { scale = 0.11, roughness = 0.88, emissive = '#000000' } = {}) {
   const m = new THREE.MeshStandardMaterial({ color, roughness, metalness: 0, map: ashlar(), emissive })
+  m.emissiveMap = null
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uScale = { value: scale }
     sh.vertexShader = sh.vertexShader

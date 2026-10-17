@@ -343,6 +343,10 @@ export class Boulevard {
           }`,
       })
       const plane = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), mat)
+      // (the drawings over the street now tell each stop; the façade keeps
+      // only a soft wash of light)
+      mat.uniforms.tMap.value = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1)
+      mat.uniforms.tMap.value.needsUpdate = true
       plane.rotation.y = (side * -Math.PI) / 2
       plane.position.set(side * (STREET - 0.35), slot.h * 0.52, slot.zc)
       scene.add(plane)
