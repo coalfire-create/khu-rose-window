@@ -6,6 +6,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { GLASS_GLSL } from './glass.js'
 import { stoneMaterial } from './stone.js'
+import { buildPlaza } from './plaza.js'
 import { pixelRatio, tier } from '../device.js'
 
 // 평화의전당 (Grand Peace Palace) by night, modelled after photographs: two
@@ -109,7 +110,12 @@ export function palaceModel(u, { stair = true } = {}) {
     // recess sides
     box('dark', 0.25, a.top, 0.9, x - w / 2 - 0.12, y, z - 0.2)
     box('dark', 0.25, a.top, 0.9, x + w / 2 + 0.12, y, z - 0.2)
-    if (frame) archFrame('trim', w + 0.1, h - w * 0.75, 0.55, 0.35, x, y, z + 0.05)
+    if (frame) {
+      archFrame('trim', w + 0.1, h - w * 0.75, 0.55, 0.35, x, y, z + 0.05)
+      // slender shafts either side, rising to the arch's springing
+      for (const sx of [-1, 1]) box('trim', 0.22, h - w * 0.75, 0.3, x + sx * (w / 2 + 0.55), y, z + 0.32)
+      for (const sx of [-1, 1]) box('trim', 0.5, 0.3, 0.45, x + sx * (w / 2 + 0.55), y + h - w * 0.75, z + 0.3)
+    }
     return a.top
   }
   const roseAt = (x, y, z, rad) => {
@@ -185,6 +191,9 @@ export function palaceModel(u, { stair = true } = {}) {
     }
     // string courses with a band of blind arcading under the parapet
     for (const yy of [17.6, 34.6]) box('trim', TW + 0.8, 0.7, TW + 0.8, cx, yy, 0)
+    // blind arcades under the courses, rows of little pointed arches
+    for (const [yy, zz] of [[15.4, front + 0.05], [32.4, front - 0.35]])
+      for (let i = 0; i < 7; i++) archFrame('trim', 0.8, 1.0, 0.22, 0.12, cx - TW / 2 + 2.2 + i * ((TW - 4.4) / 6), yy, zz)
     box('trim', TW, 0.8, TW, cx, TH - 0.3, -0.4)
     for (let i = 0; i < 8; i++) {
       const ax = cx - TW / 2 + 1.3 + i * ((TW - 2.6) / 7)
@@ -253,6 +262,8 @@ export function palaceModel(u, { stair = true } = {}) {
   {
     const p = arch(4.4, 6.2)
     archFrame('trim', 4.4, 6.2, 1.6, 0.8, 0, 0.6, cz + 1.2)
+    archFrame('trim', 6.2, 6.6, 1.0, 0.45, 0, 0.6, cz + 1.0)
+    archFrame('trim', 7.4, 7.0, 0.7, 0.35, 0, 0.6, cz + 0.8)
     box('dark', 4.4, p.top, 0.6, 0, 0.6, cz + 0.6)
     const ws = new THREE.Shape()
     ws.moveTo(-3.6, 0)
@@ -321,8 +332,8 @@ export function palaceModel(u, { stair = true } = {}) {
     for (let i = 0; i < 10; i++) box('trim', 0.7, 1.6, 0.7, sx * 4.4, -2.8 + i * 0.28, front + 6 + i * 2)
   }
 
-  const stone = stoneMaterial('#e2ded8', { scale: 0.13 })
-  const trim = stoneMaterial('#efebe4', { scale: 0.2, roughness: 0.8 })
+  const stone = stoneMaterial('#e4e0da', { scale: 0.26 })
+  const trim = stoneMaterial('#f0ece5', { scale: 0.38, roughness: 0.8 })
   const dark = new THREE.MeshStandardMaterial({ color: '#2d2a33', roughness: 0.9 })
   const mats = { stone, dark, trim }
   for (const [k, list] of Object.entries(bins)) {
@@ -407,37 +418,7 @@ export class Palace {
     scene.add(palaceModel(this.u))
 
 
-    // plaza paving with a soft warm pool from the floodlights
-    const plaza = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), stoneMaterial('#6f6a66', { scale: 0.3, roughness: 0.75 }))
-    plaza.rotation.x = -Math.PI / 2
-    plaza.position.set(0, -3, front + 40)
-    scene.add(plaza)
-
-    // trees on the slopes either side (dark masses against the sky)
-    const treeMat = new THREE.MeshStandardMaterial({ color: '#16241e', roughness: 1 })
-    const trees = []
-    for (let i = 0; i < tier(60, 30); i++) {
-      const side = i % 2 ? 1 : -1
-      const x = side * (34 + Math.random() * 60)
-      const z = -40 + Math.random() * 110
-      const s = 4 + Math.random() * 5
-      const g = new THREE.IcosahedronGeometry(s, 1)
-      g.scale(1, 1.15, 1)
-      g.translate(x, -3 + s * 0.9, z)
-      trees.push(g)
-    }
-    scene.add(new THREE.Mesh(mergeGeometries(trees.map((g) => (g.index ? g.toNonIndexed() : g)), false), treeMat))
-    // lamps along the plaza
-    const lampMat = new THREE.MeshBasicMaterial({ color: '#ffe0a8' })
-    for (let i = 0; i < 8; i++)
-      for (const sx of [-1, 1]) {
-        const l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), lampMat)
-        l.position.set(sx * 18, 3.0, front + 12 + i * 9)
-        scene.add(l)
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 6, 6), dark)
-        post.position.set(sx * 18, 0, front + 12 + i * 9)
-        scene.add(post)
-      }
+    buildPlaza(scene, this.u)
 
     /* post: bloom on the glass and lamps */
     const composer = (this.composer = new EffectComposer(r))

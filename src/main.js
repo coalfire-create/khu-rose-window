@@ -120,12 +120,12 @@ async function boot() {
     textColor: '#a40f16',
     backgroundColor: '#f1e8d8',
     shadowColor: '#3a1418',
-    fitPadding: MOBILE ? 8 : 6,
+    fitPadding: MOBILE ? 10 : 8,
     lightSize: 22,
     lightFalloff: 45,
-    shadowStrength: 100,
-    rainbow: 330,
-    dither: 2,
+    shadowStrength: MOBILE ? 70 : 100,
+    rainbow: MOBILE ? 160 : 300,
+    dither: 0,
     samples: MOBILE ? 40 : 64,
     quality: MOBILE ? 70 : 100,
     // No pointer: the sun crosses the sky above the words by itself.
@@ -264,30 +264,88 @@ async function boot() {
   let nowIdx = -2
   const nowArt = $('nowArt')
   const nowVeil = $('nowVeil')
-  // each stop's drawing traces itself in gold, then its words fade in
-  const drawArt = (key) => {
+  // Each stop's drawing is painted on its hall's wall and traced in gold as
+  // you scroll: scroll back and it un-draws, so no stop can be skipped past
+  // unseen.
+  let artKey = null
+  let artStrokes = []
+  let artFills = []
+  const loadArt = (key) => {
+    if (key === artKey) return
+    artKey = key
     nowArt.innerHTML = ART[key] || ''
-    const strokes = [...nowArt.querySelectorAll('.d')]
-    strokes.forEach((el) => {
+    artStrokes = [...nowArt.querySelectorAll('.d')].map((el) => {
       const len = el.getTotalLength ? el.getTotalLength() : 400
       el.style.strokeDasharray = `${len} ${len}`
-      el.style.strokeDashoffset = len
-      el.style.fillOpacity = 0
+      return { el, len, op: +(el.getAttribute('opacity') || 1) }
     })
-    gsap.to(strokes, { strokeDashoffset: 0, duration: 1.5, ease: 'power2.inOut', stagger: { amount: 1.4 } })
-    gsap.to(strokes, { fillOpacity: 1, duration: 0.8, delay: 1.2, stagger: { amount: 0.8 } })
-    gsap.fromTo(nowArt.querySelectorAll('.f'), { opacity: 0 }, { opacity: (k, el) => +(el.getAttribute('opacity') || 1), duration: 0.8, delay: 1.4, stagger: 0.03 })
+    artFills = [...nowArt.querySelectorAll('.f')].map((el) => ({ el, op: +(el.getAttribute('opacity') || 1) }))
+  }
+  const paintArt = (k) => {
+    const n = artStrokes.length
+    artStrokes.forEach((st, j) => {
+      const local = clamp01((k * 1.35 - (j / Math.max(1, n)) * 0.35) / 1)
+      st.el.style.strokeDashoffset = (st.len * (1 - local)).toFixed(1)
+      st.el.style.fillOpacity = clamp01((k - 0.7) / 0.25).toFixed(2)
+    })
+    const f = clamp01((k - 0.62) / 0.3)
+    artFills.forEach(({ el, op }) => (el.style.opacity = (op * f).toFixed(2)))
+  }
+  // a 3×3 homography taking the 800×600 drawing onto the wall's screen quad
+  const solve8 = (A, b) => {
+    const n = 8
+    for (let c = 0; c < n; c++) {
+      let m = c
+      for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[m][c])) m = r
+      ;[A[c], A[m]] = [A[m], A[c]]
+      ;[b[c], b[m]] = [b[m], b[c]]
+      for (let r = c + 1; r < n; r++) {
+        const f = A[r][c] / A[c][c]
+        for (let k = c; k < n; k++) A[r][k] -= f * A[c][k]
+        b[r] -= f * b[c]
+      }
+    }
+    const x = new Array(n)
+    for (let r = n - 1; r >= 0; r--) {
+      let acc = b[r]
+      for (let k = r + 1; k < n; k++) acc -= A[r][k] * x[k]
+      x[r] = acc / A[r][r]
+    }
+    return x
+  }
+  const toWall = (quad) => {
+    const src = [[0, 0], [800, 0], [800, 600], [0, 600]]
+    const A = []
+    const b = []
+    src.forEach(([x, y], i) => {
+      const [u, v] = quad[i]
+      A.push([x, y, 1, 0, 0, 0, -u * x, -u * y])
+      b.push(u)
+      A.push([0, 0, 0, x, y, 1, -v * x, -v * y])
+      b.push(v)
+    })
+    const [h0, h1, h2, h3, h4, h5, h6, h7] = solve8(A, b)
+    return `matrix3d(${h0},${h3},0,${h6},${h1},${h4},0,${h7},0,0,1,0,${h2},${h5},0,1)`
+  }
+  const placeArt = () => {
+    let { i, k } = boulevard.drawn()
+    // walking on to the next stop, the last drawing stays on its wall
+    if (k <= 0 && i > 0) ((i -= 1), (k = 1))
+    const quad = S.now.on && boulevard.progress > 0.04 ? boulevard.wallQuad(i) : null
+    if (!quad || k <= 0) {
+      nowArt.style.opacity = '0'
+      return
+    }
+    loadArt(boulevard.stops[i].key)
+    nowArt.style.opacity = '1'
+    nowArt.style.transform = toWall(quad)
+    paintArt(k)
   }
   const showNow = (i) => {
     if (i === nowIdx) return
     nowIdx = i
     nowCard.classList.toggle('is-on', i >= 0)
     nowVeil.classList.toggle('is-on', i >= 0)
-    if (i < 0) gsap.to(nowArt, { opacity: 0, duration: 0.4 })
-    else {
-      gsap.set(nowArt, { opacity: 1 })
-      drawArt(boulevard.stops[i].key)
-    }
     nowDots.forEach((d, k) => d.classList.toggle('is-on', k === i))
     if (i < 0) return
     const s = boulevard.stops[i]
@@ -412,6 +470,7 @@ async function boot() {
     boulevard.progress = S.now.p
     nowHead.style.opacity = (1 - range(S.now.p, 0.03, 0.07)).toFixed(3)
     showNow(S.now.on ? boulevard.stopIndex() : -1)
+    placeArt()
 
     /* 06 peace: the flock rises and writes the word */
     peace.progress = S.peace.p

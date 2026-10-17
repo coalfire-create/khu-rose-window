@@ -247,7 +247,7 @@ button {
   height: 1000vh;
 }
 .now {
-  height: 900vh;
+  height: 1400vh;
 }
 .peace {
   height: 320vh;
@@ -430,42 +430,51 @@ button {
   position: absolute;
   left: 0;
   right: 0;
-  top: 46%;
-  bottom: 7%;
-}
-.motto__stage {
-  -webkit-mask-image: linear-gradient(transparent, #000 22%);
-  mask-image: linear-gradient(transparent, #000 22%);
+  top: 54%;
+  bottom: 9%;
+  -webkit-mask-image: linear-gradient(transparent, #000 16%);
+  mask-image: linear-gradient(transparent, #000 16%);
 }
 .motto__print {
   position: absolute;
   right: var(--gutter);
-  top: 92px;
-  width: min(36vw, 520px);
+  top: 88px;
   margin: 0;
   z-index: 2;
   transform: rotate(1.6deg);
-  padding: 12px 12px 14px;
+  padding: 10px 10px 12px;
   background: #fbf6ec;
   box-shadow: 0 18px 50px rgba(60, 30, 10, 0.25), 0 2px 6px rgba(60, 30, 10, 0.18);
 }
 .motto__print img {
   display: block;
-  width: 100%;
+  height: min(30vh, 300px);
+  width: auto;
   aspect-ratio: 4 / 3;
   object-fit: cover;
   filter: sepia(0.35) contrast(1.05);
 }
 .motto__print figcaption {
-  margin-top: 10px;
+  margin-top: 8px;
+  max-width: calc(min(30vh, 300px) * 4 / 3);
   font-family: var(--serif-ko);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.5;
   color: rgba(27, 13, 16, 0.7);
+}
+.motto__copy .body {
+  max-width: min(440px, 40vw);
 }
 @media (max-width: 760px) {
   .motto__print {
     display: none;
+  }
+  .motto__stage {
+    top: 50%;
+    bottom: 10%;
+  }
+  .motto__copy .body {
+    max-width: none;
   }
 }
 .motto__stage::before {
@@ -941,10 +950,7 @@ button {
   .motto__copy {
     top: 76px;
   }
-  .motto__stage {
-    top: 50%;
-    bottom: 9%;
-  }
+
   .body {
     margin-top: 14px;
     font-size: 14px;
@@ -1095,7 +1101,7 @@ button {
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: radial-gradient(70% 80% at 35% 50%, rgba(7, 6, 16, 0.82), rgba(7, 6, 16, 0.45) 70%);
+  background: radial-gradient(80% 90% at 50% 50%, rgba(7, 6, 16, 0.25), rgba(7, 6, 16, 0.55) 80%);
   opacity: 0;
   transition: opacity 0.8s var(--ease);
   pointer-events: none;
@@ -1104,25 +1110,20 @@ button {
   opacity: 1;
 }
 .now__art {
+  /* drawn onto the hall's wall: main.js maps it there with matrix3d */
   position: absolute;
   z-index: 3;
-  left: max(var(--gutter), 4vw);
-  top: 50%;
-  width: min(58vw, 820px);
-  height: auto;
-  transform: translateY(-48%);
+  left: 0;
+  top: 0;
+  width: 800px;
+  height: 600px;
+  transform-origin: 0 0;
   overflow: visible;
-  filter: drop-shadow(0 0 10px rgba(232, 207, 142, 0.35));
+  filter: drop-shadow(0 0 6px rgba(255, 214, 140, 0.55));
   pointer-events: none;
 }
 .now__art .d {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-@media (max-width: 760px) {
-  .now__art {
-    left: 4vw;
-    top: 36%;
-    width: 92vw;
-  }
-}
+

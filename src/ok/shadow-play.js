@@ -119,19 +119,10 @@ function wrapText(ctx, text, maxWidth) {
   if (!words.length) return [text]
   const lines = []
   let current = ''
+  // A word is never broken (文化世界의 stays whole); the fit shrinks the
+  // type until every word fits its line instead.
   const place = (word) => {
-    if (current === '') {
-      if (ctx.measureText(word).width <= maxWidth) return void (current = word)
-      let chunk = ''
-      for (const ch of Array.from(word)) {
-        if (chunk && ctx.measureText(chunk + ch).width > maxWidth) {
-          lines.push(chunk)
-          chunk = ch
-        } else chunk += ch
-      }
-      current = chunk
-      return
-    }
+    if (current === '') return void (current = word)
     if (ctx.measureText(`${current} ${word}`).width <= maxWidth) current = `${current} ${word}`
     else {
       lines.push(current)
@@ -209,7 +200,8 @@ export function mountShadowPlay(root, init = {}) {
     const availH = Math.max(1, h * (1 - inset))
     const layout = (s) => {
       applyFont(s)
-      const wrapped = hardLines.flatMap((l) => wrapText(ctx, l, availW))
+      // hard lines stay as written: no wrapping inside them
+      const wrapped = hardLines
       let widest = 0
       for (const l of wrapped) widest = Math.max(widest, ctx.measureText(l).width)
       return { wrapped, widest, height: s * lineHeight * wrapped.length }

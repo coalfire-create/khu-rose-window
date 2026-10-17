@@ -320,8 +320,9 @@ export class Boulevard {
     NOW.forEach((s, i) => {
       const slot = s.slot
       const side = slot.side
-      const pw = Math.min(slot.w * 0.78, 22)
-      const ph = Math.min(slot.h * 0.85, pw * (900 / 1400))
+      // a 4:3 panel on the wall, the drawing's own proportions
+      const pw = Math.min(slot.w * 0.8, 24, (slot.h * 0.86) / 0.75)
+      const ph = pw * 0.75
       const mat = new THREE.ShaderMaterial({
         uniforms: { tMap: { value: projection(s) }, uOn: { value: 0 }, uTime: this.u.uTime },
         transparent: true,
@@ -349,13 +350,13 @@ export class Boulevard {
       mat.uniforms.tMap.value.needsUpdate = true
       plane.rotation.y = (side * -Math.PI) / 2
       plane.position.set(side * (STREET - 0.35), slot.h * 0.52, slot.zc)
+      // (the panel is only a frame of reference now: the drawing over it
+      // is mapped onto the wall in the page)
+      plane.visible = false
       scene.add(plane)
+      plane.updateMatrixWorld()
+      s.plane = { mesh: plane, w: pw, h: ph }
       s.center = new THREE.Vector3(side * STREET, slot.h * 0.52, slot.zc)
-      // a soft warm uplight grazing that hall from its foot
-      const up = new THREE.SpotLight('#ffd7a8', 900, 60, 0.9, 0.9, 2)
-      up.position.set(side * (STREET - 1.5), 0.3, slot.zc)
-      up.target.position.set(side * STREET, slot.h, slot.zc)
-      scene.add(up, up.target)
       s.side = side
       this.proj.push(mat)
     })
@@ -372,6 +373,27 @@ export class Boulevard {
     const n = NOW.length
     const f = Math.min(n - 0.0001, Math.max(0, (this.progress - 0.04) / 0.92) * n)
     return { i: Math.floor(f), t: f - Math.floor(f) }
+  }
+
+  // Where stop i's wall panel lands on screen: [TL, TR, BR, BL] in CSS px, or
+  // null when any corner is behind the camera.
+  wallQuad(i) {
+    const s = NOW[i]
+    if (!s?.plane) return null
+    const { mesh, w, h } = s.plane
+    const out = []
+    for (const [x, y] of [[-w / 2, h / 2], [w / 2, h / 2], [w / 2, -h / 2], [-w / 2, -h / 2]]) {
+      const v = new THREE.Vector3(x, y, 0.02).applyMatrix4(mesh.matrixWorld).project(this.camera)
+      if (v.z > 1 || v.z < -1) return null
+      out.push([(v.x * 0.5 + 0.5) * this._w, (-v.y * 0.5 + 0.5) * this._h])
+    }
+    return out
+  }
+
+  // How far stop i's drawing has come: 0 before it, 1 once drawn.
+  drawn() {
+    const { i, t } = this.segment()
+    return { i, k: Math.min(1, Math.max(0, (t - 0.22) / 0.5)) }
   }
 
   stopIndex() {
@@ -403,7 +425,7 @@ export class Boulevard {
     // per stop: walk up over the first quarter, then hold and turn to the wall
     const shotOf = (k) => {
       const s = NOW[k]
-      const back = MOBILE ? 20 : 13
+      const back = MOBILE ? 22 : 15
       return {
         pos: new THREE.Vector3(-s.side * (STREET - 6.5), 5.5, s.center.z + back),
         look: s.center.clone().add(new THREE.Vector3(0, 1.5, 0)),
@@ -415,7 +437,7 @@ export class Boulevard {
     const pos = a.pos.clone().lerp(b.pos, k)
     const look = a.look.clone().lerp(b.look, k)
     // a slow drift while holding
-    pos.z -= sm(Math.max(0, (t - 0.28) / 0.72)) * 4
+    pos.z -= sm(Math.max(0, (t - 0.28) / 0.72)) * 1.5
     this.ps.lerp(this.pointer, Math.min(1, dt * 2))
     pos.x += this.ps.x * 1.2
     pos.y -= this.ps.y * 0.6
