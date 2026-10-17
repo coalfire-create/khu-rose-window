@@ -6,7 +6,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { GLASS_GLSL } from './glass.js'
 import { stoneMaterial } from './stone.js'
-import { buildPlaza } from './plaza.js'
+import { buildPlaza, palaceLights } from './plaza.js'
 import { pixelRatio, tier } from '../device.js'
 
 // 평화의전당 (Grand Peace Palace) by night, modelled after photographs: two
@@ -398,20 +398,7 @@ export class Palace {
     const moon = new THREE.DirectionalLight('#a9b9ff', 0.3)
     moon.position.set(-60, 80, -40)
     scene.add(moon)
-    const flood = (x, z, tx, ty, col, int) => {
-      const s = new THREE.SpotLight(col, int, 160, 0.5, 0.7, 2)
-      s.position.set(x, 0.5, z)
-      s.target.position.set(tx, ty, 0)
-      scene.add(s, s.target)
-      return s
-    }
-    this.floods = [
-      flood(-24, 26, -12, 30, '#ffe4c4', 2400),
-      flood(24, 26, 12, 30, '#ffe4c4', 2400),
-      flood(0, 30, 0, 26, '#ffe2bf', 1500),
-      flood(-6, 10, -12, 46, '#ffcf96', 900),
-      flood(6, 10, 12, 46, '#ffcf96', 900),
-    ]
+    palaceLights(scene)
 
     const front = TW / 2
     const dark = new THREE.MeshStandardMaterial({ color: '#2d2a33', roughness: 0.9 })

@@ -5,7 +5,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { palaceModel } from './palace.js'
 import { stoneMaterial } from './stone.js'
-import { buildPlaza } from './plaza.js'
+import { buildPlaza, palaceLights } from './plaza.js'
 import { pixelRatio, tier, MOBILE } from '../device.js'
 
 // 1981, the International Day of Peace: before 평화의전당 at night a flock
@@ -73,13 +73,7 @@ export class Peace {
         }),
       ),
     )
-    scene.add(new THREE.HemisphereLight('#5566a8', '#141018', 0.4))
-    for (const [x, z, t, i] of [[-26, 30, -12, 2600], [26, 30, 12, 2600], [0, 36, 0, 1600]]) {
-      const s = new THREE.SpotLight('#ffe2bf', i, 170, 0.5, 0.7, 2)
-      s.position.set(x, 0.5, z)
-      s.target.position.set(t, 30, 0)
-      scene.add(s, s.target)
-    }
+    palaceLights(scene)
     scene.add(palaceModel(this.u))
 
     buildPlaza(scene, this.u)

@@ -4,7 +4,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { palaceModel } from './palace.js'
-import { buildPlaza } from './plaza.js'
+import { buildPlaza, palaceLights } from './plaza.js'
 import { pixelRatio } from '../device.js'
 
 // The finale: back where the site began, at 평화의전당 — now from outside,
@@ -53,13 +53,7 @@ export class Gate {
         }),
       ),
     )
-    scene.add(new THREE.HemisphereLight('#5566a8', '#141018', 0.42))
-    for (const [x, z, t, i] of [[-26, 30, -12, 2600], [26, 30, 12, 2600], [0, 36, 0, 1400]]) {
-      const s = new THREE.SpotLight('#ffe2bf', i, 170, 0.5, 0.7, 2)
-      s.position.set(x, 0.5, z)
-      s.target.position.set(t, 30, 0)
-      scene.add(s, s.target)
-    }
+    palaceLights(scene)
     scene.add(palaceModel(this.u))
     buildPlaza(scene, this.u)
 
